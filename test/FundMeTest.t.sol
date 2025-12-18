@@ -13,6 +13,7 @@ contract FundMeTest is Test {
     // FundMe fundMe = new FundMe(helperConfig.activeNetworkConfig());
     // FundMe fundMe;
     FundMe public fundMe;
+    DeployFundMe public deployFundMe;
 
     address payable user;
     uint8 public constant DECIMALS = 8;
@@ -20,18 +21,18 @@ contract FundMeTest is Test {
     mapping(address => uint256) public s_addressToAmountFunded;
     AggregatorV3Interface private s_pricefeed;
     address mockPriceFeed;
+    address priceFeed;
 
+    error FundMe__NotOwner();
 
     function setUp() public {
-
         HelperConfig helperConfig = new HelperConfig();
         HelperConfig.NetworkConfig memory activeNetworkConfig = helperConfig.getActiveNetworkConfig();
 
-        emit log_address(activeNetworkConfig.priceFeed); 
+        emit log_address(activeNetworkConfig.priceFeed);
         fundMe = new FundMe(activeNetworkConfig.priceFeed);
         // Give some ETH to user
         vm.deal(user, 10 ether);
-        
     }
 
     function test_IfFundFunctionUsesRequire() public {
@@ -57,12 +58,90 @@ contract FundMeTest is Test {
         //Act
         vm.prank(user);
         uint256 actualVersion = fundMe.getVersion();
-        
+
         //failed test
         // uint256 actualVersion = s_pricefeed.version();
         uint256 currentVersion = fundMe.s_pricefeed().version();
 
         //Assert
         assertEq(actualVersion, currentVersion, "getVersion function returns currect version");
+    }
+
+    function test__revertifnotownercallswithdraw() public {
+        //Arrange
+        address payable randomuser = payable(makeAddr("randomuser"));
+        vm.deal(randomuser, 10 ether);
+
+        //Act & Assert
+        vm.expectRevert(FundMe__NotOwner.selector);
+        vm.prank(randomuser);
+        fundMe.withdraw();
+    }
+
+    function test__CanOnlyOwnerCallWithdraw() public {
+        // Arrange
+        address owner = makeAddr("owner");
+
+        // Deploy FundMe as owner
+        vm.startPrank(owner);
+        FundMe fundMe = new FundMe(priceFeed);
+        vm.stopPrank();
+
+        // Act
+        vm.startPrank(owner);
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        // Assert
+        console.log("test passed");
+    }
+
+    function test__tocheckthestateoftheforloopinwithdraw() public {
+        //Arrange
+        uint8 decimals = 8;
+        int256 initialPrice = 2000e8; // price in USD with 8 decimals
+
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(decimals, initialPrice);
+        address onlyOwner = makeAddr("onlyOwner");
+        vm.startPrank(onlyOwner);
+        FundMe fundMe = new FundMe(address(mockPriceFeed));
+        vm.stopPrank();
+        //I'm currently making multiple funders
+        address funder1 = makeAddr("funder1");
+        vm.deal(funder1, 10 ether);
+        vm.prank(funder1);
+        fundMe.fund{value: 8 ether}();
+        uint256 balance1 = funder1.balance;
+        console.log("funder1 balance", balance1);
+
+        address funder2 = makeAddr("funder2");
+        vm.deal(funder2, 12 ether);
+        vm.prank(funder2);
+        fundMe.fund{value: 8 ether}();
+        uint256 balance2 = funder2.balance;
+        console.log("funder2 balance", balance2);
+
+        address funder3 = makeAddr("funder3");
+        vm.deal(funder3, 15 ether);
+        vm.prank(funder3);
+        fundMe.fund{value: 8 ether}();
+        uint256 balance3 = funder3.balance;
+        console.log("funder3 balance", balance3);
+
+        // address onlyOwner = makeAddr("onlyOwner");
+        // vm.startPrank(onlyOwner);
+        // FundMe fundMe = new FundMe(priceFeed);
+        // vm.stopPrank();
+
+        //Act
+        vm.prank(onlyOwner);
+        fundMe.withdraw();
+        uint256 balanceOwner = onlyOwner.balance;
+        console.log("onlyOwner's balance", balanceOwner);
+
+        //Assert
+        assertEq(balanceOwner, 24 ether);
+        //    assertEq(s_funders.length , 0);
+        //    assertEq( balance3 , 15 -8 ether);
     }
 }

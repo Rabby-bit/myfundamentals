@@ -6,8 +6,9 @@ import {HelperConfig} from "script/HelperConfig.s.sol";
 import {DeployFundMe} from "script/DeployFundMe.s.sol";
 import {AggregatorV3Interface} from "@chainlink/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {PriceConverter} from "./PriceConverter.sol";
+import {console} from "forge-std/console.sol";
 
-error NotOwner();
+error FundMe__NotOwner();
 
 contract FundMe {
     using PriceConverter for uint256;
@@ -23,6 +24,8 @@ contract FundMe {
     constructor(address priceFeed) {
         i_owner = msg.sender;
         s_pricefeed = AggregatorV3Interface(priceFeed);
+
+        console.log("The owner is set as", msg.sender);
     }
 
     function fund() public payable {
@@ -38,7 +41,7 @@ contract FundMe {
 
     modifier onlyOwner() {
         // require(msg.sender == owner);
-        if (msg.sender != i_owner) revert NotOwner();
+        if (msg.sender != i_owner) revert FundMe__NotOwner();
         _;
     }
 

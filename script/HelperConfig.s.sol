@@ -14,15 +14,15 @@ contract HelperConfig is Script {
         address priceFeed;
     }
 
-   constructor() {
-    if (block.chainid == 11155111) {
-        activeNetworkConfig = getEthConfig();
-    } else if (block.chainid == 31337) {
-        activeNetworkConfig = getAnvilConfig();
-    } else {
-        revert("Chain not supported");
+    constructor() {
+        if (block.chainid == 11155111) {
+            activeNetworkConfig = getEthConfig();
+        } else if (block.chainid == 31337) {
+            activeNetworkConfig = getAnvilConfig();
+        } else {
+            revert("Chain not supported");
+        }
     }
-}
 
     function getEthConfig() public returns (NetworkConfig memory) {
         NetworkConfig memory ethConfig = NetworkConfig({priceFeed: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419});
@@ -30,10 +30,9 @@ contract HelperConfig is Script {
     }
 
     function getAnvilConfig() public returns (NetworkConfig memory) {
-
         if (activeNetworkConfig.priceFeed != address(0)) {
-    return activeNetworkConfig;
-}
+            return activeNetworkConfig;
+        }
         // vm.startBroadcast();
         MockV3Aggregator mockPriceFeed = new MockV3Aggregator(DECIMALS, INITIAL_PRICE);
         // vm.stopBroadcast();
@@ -41,7 +40,6 @@ contract HelperConfig is Script {
         activeNetworkConfig = NetworkConfig({priceFeed: address(mockPriceFeed)});
 
         return activeNetworkConfig;
-        
     }
     // console.log("CONFIG PRICE FEED:", config.priceFeed);
 
