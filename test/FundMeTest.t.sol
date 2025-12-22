@@ -7,6 +7,7 @@ import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 import {AggregatorV3Interface} from "@chainlink/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {RejectEther} from "../src/RejectEther.sol";
 
 contract FundMeTest is Test {
     // HelperConfig helperConfig = new HelperConfig();
@@ -144,4 +145,30 @@ contract FundMeTest is Test {
         //    assertEq(s_funders.length , 0);
         //    assertEq( balance3 , 15 -8 ether);
     }
+
+    function test_iferrorCallfailsAsExpected() public {
+         
+    // Arrange
+    uint8 decimals = 8;
+    int256 initialPrice = 2000e8;
+    MockV3Aggregator mockPriceFeed =
+        new MockV3Aggregator(decimals, initialPrice);
+        
+
+    RejectEther rejectEther = new RejectEther(address(mockPriceFeed));
+    FundMe fundMe = rejectEther.fundMe();
+
+   // Fund FundMe
+   vm.deal(address(this), 200 ether);
+   fundMe.fund{value: 150 ether}();
+
+   // Act + Assert
+   vm.expectRevert("Call failed");
+   vm.prank(address(rejectEther));
+   rejectEther.callWithdraw();
+
+    
 }
+
+    }
+
