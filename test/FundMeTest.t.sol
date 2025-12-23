@@ -169,6 +169,81 @@ contract FundMeTest is Test {
 
     
 }
+    function test__recievefunction() public {
+        //Arrange
+        address user = makeAddr("user");
+        
+        console.log("User's initial balance:", user.balance);
+        vm.deal(user, 16 ether);
+        uint256 userbalance = user.balance;
+
+        //Act
+        vm.prank(user);
+        (bool success, ) = address(fundMe).call{value: 6 ether}("");
+        require(success, "ETH send failed");
+
+        uint256 userfinalbalance = user.balance;
+        console.log("User's final balance:" , user.balance);
+
+        uint256 fundMebalance = address(fundMe).balance;
+
+
+
+
+
+
+        //Assert
+        assertEq(fundMebalance, 6 ether, "Transfer gone wrong");
+        assertEq(user.balance, 10 ether, "User balance incorrect");
+
+
+    }
+    
+  
+  function test__fallbackfunction() public {
+        //Arrange
+        address user = makeAddr("user");
+        
+        console.log("User's initial balance:", user.balance);
+        vm.deal(user, 16 ether);
+        uint256 userbalance = user.balance;
+
+        //Act
+        vm.prank(user);
+        (bool success, ) = address(fundMe).call{value: 6 ether}("I love what you do so i sent ETH");
+        require(success, "ETH send failed");
+
+        uint256 userfinalbalance = user.balance;
+        console.log("User's final balance:" , user.balance);
+
+        uint256 fundMebalance = address(fundMe).balance;
+
+
+
+
+
+
+        //Assert
+        assertEq(fundMebalance, 6 ether, "Transfer gone wrong");
+        assertEq(user.balance, 10 ether, "User balance incorrect");
+
+
+    }
+
+    function test_iffundfunctionrevertwithrequire() public {
+        //Arrange 
+        address user = payable(makeAddr("user"));
+        vm.deal(user, 4 ether);
+
+        //Act && Assert
+        vm.expectRevert("You need to spend more ETH!"); 
+        vm.prank(user);
+        fundMe.fund{value: 0.001 ether}();
+
+        
+
+    }
+
 
     }
 
